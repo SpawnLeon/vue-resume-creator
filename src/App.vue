@@ -3,13 +3,23 @@
     <app-form @createBlock="createBlock" />
     <app-card class-name="card-w70">
       <div v-if="blocks.length">
-        <component
-          :is="`app-${getBlockType(block)}`"
+        <div
+          class="list__item item-list"
           v-for="block in blocks"
           :key="block"
-          :value="getBlockValue(block)"></component>
+        >
+          <component
+            :is="`app-${getBlockType(block)}`"
+            :value="getBlockValue(block)"
+          ></component>
+
+          <app-button color="danger item-list__close"
+                      @action="removeBlock(block.id)">&times;
+          </app-button>
+        </div>
+
       </div>
-      <h3 v-else>Добавьте первый блок, чтобы увидеть результат</h3>
+      <h3 v-else>Добавьте пер блок, чтобы увидеть результат</h3>
     </app-card>
   </div>
   <div class="container">
@@ -26,7 +36,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import AppLoader from './components/AppLoader.vue';
 import AppForm from './components/AppForm.vue';
 import AppButton from './components/AppButton.vue';
@@ -52,33 +61,7 @@ export default {
   },
   data() {
     return {
-      blocks: [
-        {
-          id: 1,
-          value: 'Резюме Nickname',
-          // title | subtitle | avatar | text
-          type: 'title',
-        },
-        {
-          id: 2,
-          value: 'Опыт работы',
-          type: 'subtitle',
-        },
-        {
-          id: 3,
-          value: 'https://cdn.dribbble.com/users/5592443/screenshots/14279501/drbl_pop_r_m_rick_4x.png',
-          type: 'avatar',
-        },
-
-        {
-          id: 4,
-          value: `Главный герой американского мультсериала «Рик и Морти», гениальный учёный, изобретатель,
-          атеист (хотя в некоторых сериях он даже молится Богу, однако, каждый раз после чудесного
-          спасения ссылается на удачу и вновь отвергает его существование),
-          алкоголик, социопат, дедушка Морти. На момент начала третьего сезона ему 70 лет[1]`,
-          type: 'text',
-        },
-      ],
+      blocks: [],
       comments: [],
       isCommentsLoading: false,
     };
@@ -86,26 +69,75 @@ export default {
   methods: {
     async getComments() {
       this.isCommentsLoading = true;
-      const response = await axios.get('https://jsonplaceholder.typicode.com/comments?_limit=15');
-      const { data } = response;
+      const response = await fetch('https://jsonplaceholder.typicode.com/comments?_limit=15', {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const comments = await response.json();
       this.isCommentsLoading = false;
-      return data;
+      return comments;
     },
+
     async onClickLoadComments() {
       this.comments = await this.getComments();
     },
+
     getBlockType: (block) => block.type,
+
     getBlockValue: (block) => block.value,
-    createBlock({ type, value }) {
-      const newBLock = { id: Math.random(), value, type };
+
+    async createBlock({ type, value }) {
+      const newBLock = { value, type };
+      const res = await fetch(
+        'https://vue-resume-creator-default-rtdb.europe-west1.firebasedatabase.app/block.json', {
+          method: 'post',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newBLock),
+        },
+      );
+
+      const data = await res.json();
+      newBLock.id = data.name;
       this.blocks.push(newBLock);
     },
+
+    async removeBlock(id) {
+      await fetch(
+        `https://vue-resume-creator-default-rtdb.europe-west1.firebasedatabase.app/block/${id}.json`, {
+          method: 'delete',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+      this.blocks = this.blocks.filter((el) => el.id !== id);
+    },
+
+    async loadBlocks() {
+      let blocks = [];
+      const response = await fetch(
+        'https://vue-resume-creator-default-rtdb.europe-west1.firebasedatabase.app/block.json', {
+          method: 'get',
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+      const data = await response.json();
+
+      blocks = Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }));
+
+      return blocks;
+    },
+  },
+  async mounted() {
+    const blocks = await this.loadBlocks();
+    this.blocks = blocks;
   },
 
 };
 </script>
 
-<style>
+<style lang="scss">
 .avatar {
   display         : flex;
   justify-content : center;
@@ -116,4 +148,32 @@ export default {
   height        : auto;
   border-radius : 50%;
 }
+
+.list {
+  // .list__item
+  &__item {
+    display         : flex;
+    align-items     : center;
+    justify-content : space-between;
+    position        : relative;
+    padding-right   : 30px;
+
+    > * {
+      flex-grow : 1;
+    }
+  }
+}
+
+.item-list {
+  // .item-list__close
+  &__close {
+    position : absolute;
+    top      : 0px;
+    right    : 0px;
+    padding  : 5px;
+    height   : 30px;
+    width    : 30px;
+  }
+}
+
 </style>
