@@ -1,4 +1,4 @@
-# week2-homework
+# vue-resume-creator
 
 ## Project setup
 ```
