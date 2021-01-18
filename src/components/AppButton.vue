@@ -1,5 +1,5 @@
 <template>
-  <button class="btn"
+  <button class="btn" @click="$emit('action')"
           :class="color">
     <slot></slot>
   </button>
@@ -8,6 +8,9 @@
 
 <script>
 export default {
+  emits: {
+    action: null,
+  },
   props: {
     color: {
       type: String,

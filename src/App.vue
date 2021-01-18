@@ -14,12 +14,14 @@
   </div>
   <div class="container">
     <p>
-      <app-button color="primary">Загрузить комментарии</app-button>
+      <app-button @action="onClickLoadComments"
+                  color="primary">Загрузить комментарии
+      </app-button>
     </p>
     <app-card v-if="comments.length">
       <app-comment-list :comments="comments" />
     </app-card>
-    <app-loader v-else />
+    <app-loader v-if="isCommentsLoading" />
   </div>
 </template>
 
@@ -78,13 +80,19 @@ export default {
         },
       ],
       comments: [],
+      isCommentsLoading: false,
     };
   },
   methods: {
     async getComments() {
-      const response = await axios.get('https://jsonplaceholder.typicode.com/comments?_limit=42');
+      this.isCommentsLoading = true;
+      const response = await axios.get('https://jsonplaceholder.typicode.com/comments?_limit=15');
       const { data } = response;
+      this.isCommentsLoading = false;
       return data;
+    },
+    async onClickLoadComments() {
+      this.comments = await this.getComments();
     },
     getBlockType: (block) => block.type,
     getBlockValue: (block) => block.value,
@@ -94,9 +102,6 @@ export default {
     },
   },
 
-  async mounted() {
-    this.comments = await this.getComments();
-  },
 };
 </script>
 

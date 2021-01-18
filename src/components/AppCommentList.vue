@@ -8,7 +8,7 @@
       <div>
         <p><strong>{{ comment.email }}</strong></p>
         <small>
-          {{ comment.bosy }}
+          {{ comment.body }}
         </small>
       </div>
     </li>
